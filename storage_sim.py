@@ -1,12 +1,12 @@
 import random as rand
 import time
+from curses import wrapper
 import curses
 from collections import deque
 
 
-def main():
+def main(stdscr):
     # Curses initialization
-    stdscr = curses.initscr()
     curses.noecho()
     stdscr.clear()
 
@@ -19,7 +19,7 @@ def main():
     memory = []
     memory.append([-1, 0, 0, 175])
     jobs = deque([])
-    cycle = 0
+    cycle = 1
     last_process = 0
     cur_job_id = 1
     current_job = 1
@@ -27,17 +27,24 @@ def main():
 
     # Statistics Variables
     avg_turnaround = 0.0
+    rejected_jobs = 0
 
     for x in range(174):
         memory.append([0, 0, 0, 0])
         visual_memory.append('-')
 
     # Clock Cycle Simulation
-    while cycle <= 5000:
+    while cycle < 5000:
         cycle = cycle + 1
+
+        # Clear the screen to prevent overflow/overwrite
+        stdscr.clear()
 
         # Cycle Dependent Statistics
         num_of_holes = 0
+        num_of_occupied = 0
+        total_holes_size = 0
+        total_occupied_size = 0
 
         # Job Creation
         if rand.randint(1, 10) < (cycle - last_process):
@@ -60,38 +67,44 @@ def main():
                 if not cur_cell[0] == 0:
                     if cur_cell[3] > biggest_block[3]:
                         biggest_block = cur_cell
-            # Rejecting Oversized Jobs
+            # Reject Oversized Jobs
             while next_job[3] > biggest_block[3] and not len(jobs) <= 0:
+                rejected_jobs = rejected_jobs + 1
                 jobs.popleft()
-                next_job = jobs[0]
+                if len(jobs) > 0:
+                    next_job = jobs[0]
             # First Fit
-            for x in range(len(memory)):
-                cur_cell = memory[x]
-                if cur_cell[0] == -1:
-                    if cur_cell[3] == next_job[3]:
-                        memory[x] = jobs.popleft()
-                        for y in range(next_job[3]):
-                            visual_memory[x + y] = '#'
-                        break
-                    elif cur_cell[3] > next_job[3]:
-                        memory[x + next_job[3]][0] = -1
-                        memory[x + next_job[3]][3] = cur_cell[3] - next_job[3]
-                        memory[x] = jobs.popleft()
-                        for y in range(next_job[3]):
-                            visual_memory[x + y] = '#'
-                        break
-        # Keep Track of Longest Waiting Process
+            if len(jobs) > 0:
+                for x in range(len(memory)):
+                    cur_cell = memory[x]
+                    if cur_cell[0] == -1:
+                        if cur_cell[3] == next_job[3]:
+                            memory[x] = jobs.popleft()
+                            for y in range(next_job[3]):
+                                visual_memory[x + y] = '#'
+                            break
+                        elif cur_cell[3] > next_job[3]:
+                            memory[x + next_job[3]][0] = -1
+                            memory[x + next_job[3]][3] = cur_cell[3] - next_job[3]
+                            memory[x] = jobs.popleft()
+                            for y in range(next_job[3]):
+                                visual_memory[x + y] = '#'
+                            break
+
+        # Keep track of longest waiting process
         lowest_time = [5000, -1]
         for x in range(len(memory)):
             cur_cell = memory[x]
             if cur_cell[0] > 0:
 
-                # Statistics
-                num_of_holes = num_of_holes + 1
+                # Statistics For Occupied Cells
+                num_of_occupied = num_of_occupied + 1
+                total_occupied_size = total_occupied_size + cur_cell[3]
 
                 if cur_cell[0] == current_job:
                     if cur_cell[2] < 1:
-                        if cur_cell[1] > 1000:
+                        # If we are in the polling period, begin taking statistics
+                        if cycle > 1000:
                             jobs_processed = jobs_processed + 1
                             avg_turnaround = avg_turnaround + \
                                 (((cycle - cur_cell[1]) - avg_turnaround)
@@ -106,29 +119,46 @@ def main():
                     if cur_cell[1] < lowest_time[0]:
                         lowest_time = [cur_cell[1], cur_cell[0]]
             elif cur_cell[0] < 0:
-                # Statistics
+
+                # Statistics For Holes
                 num_of_holes = num_of_holes + 1
+                total_holes_size = total_holes_size + cur_cell[3]
+
         # If We Have No Job, Assign Job
         if current_job == -1:
             current_job = lowest_time[1]
 
-        # Set Up Visuals
-        stdscr.addstr(0, 0, 'Memory:')
-        stdscr.addstr(1, 0, ''.join(visual_memory))
-        stdscr.addstr(10, 0, 'Job added to queue: ' + str(last_job))
-        stdscr.addstr(10, 50, 'Jobs in queue: ' + str(len(jobs)))
+        # Set Up Visual Variables
+        top_job = 'None'
+        avg_occupied_size = 0.0
+        avg_hole_size = 0.0
         if len(jobs) > 0:
-            stdscr.addstr(10, 100, 'Job on top of queue: ' + str(jobs[0]))
-        stdscr.addstr(15, 0, 'Average Turnaround: ' + str(avg_turnaround))
-        stdscr.addstr(16, 0, 'Holes: ' + str(num_of_holes))
-        stdscr.addstr(17, 0, 'Average Hole Size: ' + str(175./num_of_holes))
+            top_job = str(jobs[0])
+        if num_of_occupied > 0:
+            avg_occupied_size = float(total_occupied_size) / num_of_occupied
+        if num_of_holes > 0:
+            avg_hole_size = float(total_holes_size) / num_of_holes
+
+        # Set Up Visuals
+        stdscr.addstr(0, 0,    'Memory:')
+        stdscr.addstr(1, 0,    ''.join(visual_memory))
+        stdscr.addstr(8, 0,    'Cycle:                           ' + str(cycle))
+        stdscr.addstr(10, 0,   'Job added to queue:              ' + str(last_job))
+        stdscr.addstr(11, 0,   'Job on top of queue:             ' + top_job)
+        stdscr.addstr(12, 0,   'Jobs in queue:                   ' + str(len(jobs)))
+        stdscr.addstr(15, 0,   'Average Turnaround:              ' + '%.4f' % avg_turnaround)
+        stdscr.addstr(16, 0,   'Processes in memory:             ' + str(num_of_occupied))
+        stdscr.addstr(17, 0,   'Holes:                           ' + str(num_of_holes))
+        stdscr.addstr(18, 0,   'Average Occupied Size:           ' + '%.4f' % avg_occupied_size)
+        stdscr.addstr(19, 0,   'Average Hole Size:               ' + '%.4f' % avg_hole_size)
+        stdscr.addstr(20, 0,   'Rejected Jobs:                   ' + str(rejected_jobs))
         stdscr.refresh()
-        stdscr.clear()
         time.sleep(0.01)
 
     # Curses end
+    stdscr.getch()
     curses.echo()
     curses.endwin()
 
 
-main()
+wrapper(main)
