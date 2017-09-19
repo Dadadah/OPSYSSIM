@@ -1,18 +1,24 @@
 import random as rand
 import time
-from curses import wrapper
 import curses
+from curses import wrapper
 from collections import deque
 
 
+cycle = 1
+
+
 # Create a jobs
-# cycle        - Current cycle
-# jobs         - Jobs queue
-# last_process - Cycle of the last job Creation
-# last_job     - Last job created, for UI
-# cur_job_id   - ID of the last job created
-def create_job(cycle, jobs, last_process, last_job, cur_job_id):
-    if rand.randint(1, 10) < (cycle - last_process):
+# jobs          - Jobs queue
+# last_job_time - Cycle of the last job Creation
+# last_job      - Last job created, for UI
+# cur_job_id    - ID of the last job created
+# Returns:
+#   last_job_time
+#   last_job
+#   cur_job_id
+def create_job(jobs, last_job_time, last_job, cur_job_id):
+    if rand.randint(1, 10) < (cycle - last_job_time):
         new_job = []
         new_job.append(cur_job_id)
         new_job.append(cycle)
@@ -20,20 +26,27 @@ def create_job(cycle, jobs, last_process, last_job, cur_job_id):
         new_job.append(rand.randint(5, 30))
         jobs.append(new_job)
         return cycle, new_job, cur_job_id + 1
-    return last_process, last_job, cur_job_id
+    return last_job_time, last_job, cur_job_id
 
 
+# Manage jobs, delete jobs, ready jobs
+# memory        - The state of the memory
+# jobs          - Jobs queue
+# rejected_jobs - The count of rejected jobs
+# visual_memory - Visual representation of memory for UI
+# Returns:
+#   rejected_jobs
 def manage_jobs(memory, jobs, rejected_jobs, visual_memory):
     if len(jobs) > 0:
         # Finding Biggest Block
         biggest_block = [0, 0, 0, 0]
-        next_job = jobs[0]
         for x in range(len(memory)):
             cur_cell = memory[x]
             if not cur_cell[0] == 0:
                 if cur_cell[3] > biggest_block[3]:
                     biggest_block = cur_cell
         # Reject Oversized Jobs
+        next_job = jobs[0]
         while next_job[3] > biggest_block[3] and not len(jobs) <= 0:
             rejected_jobs = rejected_jobs + 1
             jobs.popleft()
@@ -41,11 +54,16 @@ def manage_jobs(memory, jobs, rejected_jobs, visual_memory):
                 next_job = jobs[0]
         # First Fit
         if len(jobs) > 0:
-            first_fit(memory, jobs, visual_memory, next_job)
+            first_fit(memory, jobs, visual_memory)
     return rejected_jobs
 
 
-def first_fit(memory, jobs, visual_memory, next_job):
+# Put job in next available fit
+# memory - The state of the memory
+# jobs - Jobs queue
+# visual_memory - Visual representation of memory for UI
+def first_fit(memory, jobs, visual_memory):
+    next_job = jobs[0]
     for x in range(len(memory)):
         cur_cell = memory[x]
         if cur_cell[0] == -1:
@@ -63,6 +81,63 @@ def first_fit(memory, jobs, visual_memory, next_job):
                 break
 
 
+# Process the process and clear memory of finished processes
+# memory - The state of the memory
+# current_job - The ID of the job we are processing currently
+# jobs_processed - The count of jobs processed
+# avg_turnaround - The average turnaround time for processes
+# visual_memory - Visual representation of memory for UI
+# Returns:
+#   current_job
+#   num_of_occupied (Statistics)
+#   num_of_holes (Statistics)
+#   total_occupied_size (Statistics)
+#   total_holes_size (Statistics)
+#   avg_turnaround (Statistics)
+def process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_memory):
+    lowest_time = [5000, -1]
+
+    num_of_occupied = 0
+    num_of_holes = 0
+    total_occupied_size = 0
+    total_holes_size = 0
+
+    for x in range(len(memory)):
+        cur_cell = memory[x]
+        if cur_cell[0] > 0:
+
+            # Statistics For Occupied Cells
+            num_of_occupied = num_of_occupied + 1
+            total_occupied_size = total_occupied_size + cur_cell[3]
+
+            if cur_cell[0] == current_job:
+                if cur_cell[2] < 1:
+                    # If we are in the polling period, begin taking statistics
+                    if cycle > 1000:
+                        jobs_processed = jobs_processed + 1
+                        avg_turnaround = avg_turnaround + (((cycle - cur_cell[1]) - avg_turnaround) / jobs_processed)
+                    cur_cell = [-1, 0, 0, cur_cell[3]]
+                    for y in range(cur_cell[3]):
+                        visual_memory[x + y] = '-'
+                cur_cell[2] = cur_cell[2] - 1
+                memory[x] = cur_cell
+                current_job = -1
+            else:
+                if cur_cell[1] < lowest_time[0]:
+                    lowest_time = [cur_cell[1], cur_cell[0]]
+        elif cur_cell[0] < 0:
+
+            # Statistics For Holes
+            num_of_holes = num_of_holes + 1
+            total_holes_size = total_holes_size + cur_cell[3]
+
+    # If we have no job assign one
+    if current_job == -1:
+        current_job = lowest_time[1]
+
+    return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround
+
+
 def main(stdscr):
     # Curses initialization
     curses.noecho()
@@ -77,8 +152,9 @@ def main(stdscr):
     memory = []
     memory.append([-1, 0, 0, 175])
     jobs = deque([])
-    cycle = 1
-    last_process = 0
+    # cycle = 1
+    global cycle
+    last_job_time = 0
     cur_job_id = 1
     current_job = 1
     jobs_processed = 0
@@ -98,54 +174,15 @@ def main(stdscr):
         # Clear the screen to prevent overflow/overwrite
         stdscr.clear()
 
-        # Cycle Dependent Statistics
-        num_of_holes = 0
-        num_of_occupied = 0
-        total_holes_size = 0
-        total_occupied_size = 0
-
         # Job Creation
-        last_process, last_job, cur_job_id = create_job(cycle, jobs, last_process, last_job, cur_job_id)
+        last_job_time, last_job, cur_job_id = create_job(jobs, last_job_time, last_job, cur_job_id)
 
         # Job Managment
         rejected_jobs = manage_jobs(memory, jobs, rejected_jobs, visual_memory)
 
-        # Keep track of longest waiting process
-        lowest_time = [5000, -1]
-        for x in range(len(memory)):
-            cur_cell = memory[x]
-            if cur_cell[0] > 0:
-
-                # Statistics For Occupied Cells
-                num_of_occupied = num_of_occupied + 1
-                total_occupied_size = total_occupied_size + cur_cell[3]
-
-                if cur_cell[0] == current_job:
-                    if cur_cell[2] < 1:
-                        # If we are in the polling period, begin taking statistics
-                        if cycle > 1000:
-                            jobs_processed = jobs_processed + 1
-                            avg_turnaround = avg_turnaround + \
-                                (((cycle - cur_cell[1]) - avg_turnaround)
-                                 / jobs_processed)
-                        cur_cell = [-1, 0, 0, cur_cell[3]]
-                        for y in range(cur_cell[3]):
-                            visual_memory[x + y] = '-'
-                    cur_cell[2] = cur_cell[2] - 1
-                    memory[x] = cur_cell
-                    current_job = -1
-                else:
-                    if cur_cell[1] < lowest_time[0]:
-                        lowest_time = [cur_cell[1], cur_cell[0]]
-            elif cur_cell[0] < 0:
-
-                # Statistics For Holes
-                num_of_holes = num_of_holes + 1
-                total_holes_size = total_holes_size + cur_cell[3]
-
-        # If We Have No Job, Assign Job
-        if current_job == -1:
-            current_job = lowest_time[1]
+        # Keep track of longest waiting process and process current process
+        current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround = \
+            process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_memory)
 
         # Set Up Visual Variables
         top_job = 'None'
