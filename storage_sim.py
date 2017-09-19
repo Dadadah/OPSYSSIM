@@ -5,6 +5,64 @@ import curses
 from collections import deque
 
 
+# Create a jobs
+# cycle        - Current cycle
+# jobs         - Jobs queue
+# last_process - Cycle of the last job Creation
+# last_job     - Last job created, for UI
+# cur_job_id   - ID of the last job created
+def create_job(cycle, jobs, last_process, last_job, cur_job_id):
+    if rand.randint(1, 10) < (cycle - last_process):
+        new_job = []
+        new_job.append(cur_job_id)
+        new_job.append(cycle)
+        new_job.append(rand.randint(1, 12) * 5)
+        new_job.append(rand.randint(5, 30))
+        jobs.append(new_job)
+        return cycle, new_job, cur_job_id + 1
+    return last_process, last_job, cur_job_id
+
+
+def manage_jobs(memory, jobs, rejected_jobs, visual_memory):
+    if len(jobs) > 0:
+        # Finding Biggest Block
+        biggest_block = [0, 0, 0, 0]
+        next_job = jobs[0]
+        for x in range(len(memory)):
+            cur_cell = memory[x]
+            if not cur_cell[0] == 0:
+                if cur_cell[3] > biggest_block[3]:
+                    biggest_block = cur_cell
+        # Reject Oversized Jobs
+        while next_job[3] > biggest_block[3] and not len(jobs) <= 0:
+            rejected_jobs = rejected_jobs + 1
+            jobs.popleft()
+            if len(jobs) > 0:
+                next_job = jobs[0]
+        # First Fit
+        if len(jobs) > 0:
+            first_fit(memory, jobs, visual_memory, next_job)
+    return rejected_jobs
+
+
+def first_fit(memory, jobs, visual_memory, next_job):
+    for x in range(len(memory)):
+        cur_cell = memory[x]
+        if cur_cell[0] == -1:
+            if cur_cell[3] == next_job[3]:
+                memory[x] = jobs.popleft()
+                for y in range(next_job[3]):
+                    visual_memory[x + y] = '#'
+                break
+            elif cur_cell[3] > next_job[3]:
+                memory[x + next_job[3]][0] = -1
+                memory[x + next_job[3]][3] = cur_cell[3] - next_job[3]
+                memory[x] = jobs.popleft()
+                for y in range(next_job[3]):
+                    visual_memory[x + y] = '#'
+                break
+
+
 def main(stdscr):
     # Curses initialization
     curses.noecho()
@@ -13,7 +71,7 @@ def main(stdscr):
     # GUI Elements
     last_job = [0, 0, 0, 0]
     visual_memory = []
-    visual_memory.append('O')
+    visual_memory.append('-')
 
     # Operating System Variables
     memory = []
@@ -47,49 +105,10 @@ def main(stdscr):
         total_occupied_size = 0
 
         # Job Creation
-        if rand.randint(1, 10) < (cycle - last_process):
-            new_job = []
-            new_job.append(cur_job_id)
-            new_job.append(cycle)
-            new_job.append(rand.randint(1, 12) * 5)
-            new_job.append(rand.randint(5, 30))
-            jobs.append(new_job)
-            last_process = cycle
-            cur_job_id = cur_job_id + 1
-            last_job = new_job
+        last_process, last_job, cur_job_id = create_job(cycle, jobs, last_process, last_job, cur_job_id)
+
         # Job Managment
-        if len(jobs) > 0:
-            # Finding Biggest Block
-            biggest_block = [0, 0, 0, 0]
-            next_job = jobs[0]
-            for x in range(len(memory)):
-                cur_cell = memory[x]
-                if not cur_cell[0] == 0:
-                    if cur_cell[3] > biggest_block[3]:
-                        biggest_block = cur_cell
-            # Reject Oversized Jobs
-            while next_job[3] > biggest_block[3] and not len(jobs) <= 0:
-                rejected_jobs = rejected_jobs + 1
-                jobs.popleft()
-                if len(jobs) > 0:
-                    next_job = jobs[0]
-            # First Fit
-            if len(jobs) > 0:
-                for x in range(len(memory)):
-                    cur_cell = memory[x]
-                    if cur_cell[0] == -1:
-                        if cur_cell[3] == next_job[3]:
-                            memory[x] = jobs.popleft()
-                            for y in range(next_job[3]):
-                                visual_memory[x + y] = '#'
-                            break
-                        elif cur_cell[3] > next_job[3]:
-                            memory[x + next_job[3]][0] = -1
-                            memory[x + next_job[3]][3] = cur_cell[3] - next_job[3]
-                            memory[x] = jobs.popleft()
-                            for y in range(next_job[3]):
-                                visual_memory[x + y] = '#'
-                            break
+        rejected_jobs = manage_jobs(memory, jobs, rejected_jobs, visual_memory)
 
         # Keep track of longest waiting process
         lowest_time = [5000, -1]
