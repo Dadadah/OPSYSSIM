@@ -34,9 +34,10 @@ def create_job(jobs, last_job_time, last_job, cur_job_id):
 # jobs          - Jobs queue
 # rejected_jobs - The count of rejected jobs
 # visual_memory - Visual representation of memory for UI
+# fit_type      - Number to represent the fit type
 # Returns:
 #   rejected_jobs
-def manage_jobs(memory, jobs, rejected_jobs, visual_memory):
+def manage_jobs(memory, jobs, rejected_jobs, visual_memory, fit_type):
     if len(jobs) > 0:
         # Finding Biggest Block
         biggest_block = [0, 0, 0, 0]
@@ -54,7 +55,12 @@ def manage_jobs(memory, jobs, rejected_jobs, visual_memory):
                 next_job = jobs[0]
         # First Fit
         if len(jobs) > 0:
-            first_fit(memory, jobs, visual_memory)
+            if fit_type == 0:
+                first_fit(memory, jobs, visual_memory)
+            elif fit_type == 1:
+                best_fit(memory, jobs, visual_memory)
+            elif fit_type == 2:
+                worst_fit(memory, jobs, visual_memory)
     return rejected_jobs
 
 
@@ -71,14 +77,62 @@ def first_fit(memory, jobs, visual_memory):
                 memory[x] = jobs.popleft()
                 for y in range(next_job[3]):
                     visual_memory[x + y] = '#'
-                break
+                return
             elif cur_cell[3] > next_job[3]:
                 memory[x + next_job[3]][0] = -1
                 memory[x + next_job[3]][3] = cur_cell[3] - next_job[3]
                 memory[x] = jobs.popleft()
                 for y in range(next_job[3]):
                     visual_memory[x + y] = '#'
-                break
+                return
+
+
+def best_fit(memory, jobs, visual_memory):
+    next_job = jobs[0]
+    least_cell = -1
+    least_cell_values = []
+    for x in range(len(memory)):
+        cur_cell = memory[x]
+        if cur_cell[0] == -1:
+            if cur_cell[3] == next_job[3]:
+                memory[x] = jobs.popleft()
+                for y in range(next_job[3]):
+                    visual_memory[x + y] = '#'
+                return
+            elif cur_cell[3] > next_job[3] and (least_cell == -1 or cur_cell[3] < least_cell_values[3]):
+                least_cell = x
+                least_cell_values = cur_cell
+    if not least_cell == -1:
+        memory[least_cell + next_job[3]][0] = -1
+        memory[least_cell + next_job[3]][3] = least_cell_values[3] - next_job[3]
+        memory[least_cell] = jobs.popleft()
+        for y in range(next_job[3]):
+            visual_memory[least_cell + y] = '#'
+        return
+
+
+def worst_fit(memory, jobs, visual_memory):
+    next_job = jobs[0]
+    biggest_cell = -1
+    biggest_cell_values = []
+    for x in range(len(memory)):
+        cur_cell = memory[x]
+        if cur_cell[0] == -1:
+            if cur_cell[3] == next_job[3]:
+                memory[x] = jobs.popleft()
+                for y in range(next_job[3]):
+                    visual_memory[x + y] = '#'
+                return
+            elif cur_cell[3] > next_job[3] and (biggest_cell == -1 or cur_cell[3] > biggest_cell_values[3]):
+                biggest_cell = x
+                biggest_cell_values = cur_cell
+    if not biggest_cell == -1:
+        memory[biggest_cell + next_job[3]][0] = -1
+        memory[biggest_cell + next_job[3]][3] = biggest_cell_values[3] - next_job[3]
+        memory[biggest_cell] = jobs.popleft()
+        for y in range(next_job[3]):
+            visual_memory[biggest_cell + y] = '#'
+        return
 
 
 # Process the process and clear memory of finished processes
@@ -138,7 +192,7 @@ def process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_m
     return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround
 
 
-def main(stdscr):
+def main(stdscr, fit_type):
     # Curses initialization
     curses.noecho()
     stdscr.clear()
@@ -154,6 +208,7 @@ def main(stdscr):
     jobs = deque([])
     # cycle = 1
     global cycle
+    cycle = 1
     last_job_time = 0
     cur_job_id = 1
     current_job = 1
@@ -178,7 +233,7 @@ def main(stdscr):
         last_job_time, last_job, cur_job_id = create_job(jobs, last_job_time, last_job, cur_job_id)
 
         # Job Managment
-        rejected_jobs = manage_jobs(memory, jobs, rejected_jobs, visual_memory)
+        rejected_jobs = manage_jobs(memory, jobs, rejected_jobs, visual_memory, fit_type)
 
         # Keep track of longest waiting process and process current process
         current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround = \
@@ -209,12 +264,22 @@ def main(stdscr):
         stdscr.addstr(19, 0,   'Average Hole Size:               ' + '%.4f' % avg_hole_size)
         stdscr.addstr(20, 0,   'Rejected Jobs:                   ' + str(rejected_jobs))
         stdscr.refresh()
-        time.sleep(0.01)
+        time.sleep(0.005)
 
     # Curses end
+    fit_type_string = ''
+    if fit_type == 0:
+        fit_type_string = 'First Fit'
+    elif fit_type == 1:
+        fit_type_string = 'Best Fit'
+    elif fit_type == 2:
+        fit_type_string = 'Worst Fit'
+    stdscr.addstr(23, 0, 'Simulation for ' + fit_type_string + ' complete, press any key to terminate.')
     stdscr.getch()
     curses.echo()
     curses.endwin()
 
 
-wrapper(main)
+wrapper(main, 0)
+wrapper(main, 1)
+wrapper(main, 2)
