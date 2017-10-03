@@ -134,6 +134,7 @@ def worst_fit(memory, jobs):
 #   total_occupied_size (Statistics)
 #   total_holes_size (Statistics)
 #   avg_time_figures (Statistics)
+#   jobs_processed (Statistics)
 def process_memory(memory, current_job, jobs_processed, avg_time_figures):
     lowest_time = [5000, -1, 0]
 
