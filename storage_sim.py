@@ -152,7 +152,7 @@ def process_memory(memory, current_job, jobs_processed, avg_time_figures):
 
             if cur_cell[0] == current_job:
                 if cur_cell[2] < 1:
-                    # If we are in the polling period, begin taking statistics
+                    # If we are in the polling period, begin taking processing statistics
                     if cycle > 1000:
                         jobs_processed = jobs_processed + 1
                         avg_time_figures[0] = avg_time_figures[0] + (((cycle - cur_cell[1]) - avg_time_figures[0]) / jobs_processed)
@@ -170,9 +170,10 @@ def process_memory(memory, current_job, jobs_processed, avg_time_figures):
             num_of_holes = num_of_holes + 1
             total_holes_size = total_holes_size + cur_cell[3]
 
+    # If the lowest time'd job is new, do statistics on it.
     if not lowest_time[1] == current_job:
         current_job = lowest_time[1]
-        if not lowest_time[1] == -1:
+        if cycle > 1000 and not lowest_time[1] == -1:
             if avg_time_figures[1] == 0.0:
                 avg_time_figures[1] = lowest_time[0]
             else:
@@ -182,7 +183,7 @@ def process_memory(memory, current_job, jobs_processed, avg_time_figures):
             else:
                 avg_time_figures[2] = avg_time_figures[2] + ((lowest_time[2] - avg_time_figures[2]) / (jobs_processed + 1))
 
-    return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures
+    return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed
 
 
 def main(fit_type):
@@ -200,6 +201,7 @@ def main(fit_type):
     jobs_processed = 0
 
     # Statistics Variables
+    # Time tuple, [avg turnaround, avg wait time, avg process time]
     avg_time_figures = [0.0, 0.0, 0.0]
     rejected_jobs = 0
 
@@ -217,10 +219,8 @@ def main(fit_type):
         rejected_jobs = rejected_jobs + manage_jobs(memory, jobs, fit_type)
 
         # Keep track of longest waiting process and process current process
-        current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures = \
+        current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed = \
             process_memory(memory, current_job, jobs_processed, avg_time_figures)
-
-        # More Statistics Variables
 
         # Statistic Printing
         if cycle > 1000:
@@ -233,12 +233,13 @@ def main(fit_type):
                 avg_hole_size = 0.0
                 if num_of_holes > 0:
                     avg_hole_size = float(total_holes_size) / num_of_holes
-                print 'Free Blocks: ' + str(num_of_occupied) + ' Average Size: ' + str(avg_occupied_size) + ''
+                print 'Free Blocks: ' + str(num_of_holes) + ' Average Size: ' + str(avg_hole_size) + ''
             if cycle%500 == 0:
                 external_fragmentation = total_holes_size * 10
                 print str(external_fragmentation) + 'K Byte Fragmentation'
             if cycle%1000 == 0:
                 print 'Reject Jobs at ' + str(cycle) + ': ' + str(rejected_jobs)
+                rejected_jobs = 0
 
     print 'Average Turnaround: ' + str(avg_time_figures[0])
     print 'Average Wait Time: ' + str(avg_time_figures[1])
@@ -246,9 +247,9 @@ def main(fit_type):
 
 
 print '---------------------FIRST FIT------------------------'
-main(0)
+#main(0)
 print '----------------------BEST FIT------------------------'
-main(1)
+#main(1)
 print '---------------------WORST FIT------------------------'
 main(2)
 print '------------------------DONE--------------------------'

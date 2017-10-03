@@ -177,6 +177,8 @@ def process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_m
                     cur_cell = [-1, 0, 0, cur_cell[3]]
                     for y in range(cur_cell[3]):
                         visual_memory[x + y] = '-'
+                else:
+                    lowest_time = [cur_cell[1], cur_cell[0]]
                 cur_cell[2] = cur_cell[2] - 1
                 memory[x] = cur_cell
                 current_job = -1
@@ -191,7 +193,7 @@ def process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_m
 
     current_job = lowest_time[1]
 
-    return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround
+    return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround, jobs_processed
 
 
 def main(stdscr, fit_type):
@@ -238,7 +240,7 @@ def main(stdscr, fit_type):
         rejected_jobs = manage_jobs(memory, jobs, rejected_jobs, visual_memory, fit_type)
 
         # Keep track of longest waiting process and process current process
-        current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround = \
+        current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround, jobs_processed = \
             process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_memory)
 
         # Set Up Visual Variables
