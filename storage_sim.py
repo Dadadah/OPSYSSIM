@@ -53,7 +53,6 @@ def manage_jobs(memory, jobs, rejected_jobs, visual_memory, fit_type):
             jobs.popleft()
             if len(jobs) > 0:
                 next_job = jobs[0]
-        # First Fit
         if len(jobs) > 0:
             if fit_type == 0:
                 first_fit(memory, jobs, visual_memory)
@@ -87,6 +86,10 @@ def first_fit(memory, jobs, visual_memory):
                 return
 
 
+# Put job in best available fit
+# memory - The state of the memory
+# jobs - Jobs queue
+# visual_memory - Visual representation of memory for UI
 def best_fit(memory, jobs, visual_memory):
     next_job = jobs[0]
     least_cell = -1
@@ -111,6 +114,10 @@ def best_fit(memory, jobs, visual_memory):
         return
 
 
+# Put job in worst available fit
+# memory - The state of the memory
+# jobs - Jobs queue
+# visual_memory - Visual representation of memory for UI
 def worst_fit(memory, jobs, visual_memory):
     next_job = jobs[0]
     biggest_cell = -1
@@ -118,21 +125,18 @@ def worst_fit(memory, jobs, visual_memory):
     for x in range(len(memory)):
         cur_cell = memory[x]
         if cur_cell[0] == -1:
-            if cur_cell[3] == next_job[3]:
-                memory[x] = jobs.popleft()
-                for y in range(next_job[3]):
-                    visual_memory[x + y] = '#'
-                return
-            elif cur_cell[3] > next_job[3] and (biggest_cell == -1 or cur_cell[3] > biggest_cell_values[3]):
+            if cur_cell[3] >= next_job[3] and (biggest_cell == -1 or cur_cell[3] > biggest_cell_values[3]):
                 biggest_cell = x
                 biggest_cell_values = cur_cell
     if not biggest_cell == -1:
-        memory[biggest_cell + next_job[3]][0] = -1
-        memory[biggest_cell + next_job[3]][3] = biggest_cell_values[3] - next_job[3]
-        memory[biggest_cell] = jobs.popleft()
+        if biggest_cell_values[3] == next_job[3]:
+            memory[biggest_cell] = jobs.popleft()
+        else:
+            memory[biggest_cell + next_job[3]][0] = -1
+            memory[biggest_cell + next_job[3]][3] = biggest_cell_values[3] - next_job[3]
+            memory[biggest_cell] = jobs.popleft()
         for y in range(next_job[3]):
             visual_memory[biggest_cell + y] = '#'
-        return
 
 
 # Process the process and clear memory of finished processes
@@ -185,9 +189,7 @@ def process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_m
             num_of_holes = num_of_holes + 1
             total_holes_size = total_holes_size + cur_cell[3]
 
-    # If we have no job assign one
-    if current_job == -1:
-        current_job = lowest_time[1]
+    current_job = lowest_time[1]
 
     return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround
 
@@ -274,7 +276,7 @@ def main(stdscr, fit_type):
         fit_type_string = 'Best Fit'
     elif fit_type == 2:
         fit_type_string = 'Worst Fit'
-    stdscr.addstr(23, 0, 'Simulation for ' + fit_type_string + ' complete, press any key to terminate.')
+    stdscr.addstr(23, 0, 'Simulation for ' + fit_type_string + ' complete, press any key to continue.')
     stdscr.getch()
     curses.echo()
     curses.endwin()
