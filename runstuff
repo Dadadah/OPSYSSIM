@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Script to run commands for program 1
+
+mkdir Program1
+cd Program1
+mv ../storage_sim.py .
+
+echo "whoami | name -w"
+whoami | name -w
+
+echo ls -ltr
+ls -ltr
+
+echo pr -n storage_sim.py
+pr -n storage_sim.py
+
+echo python storage_sim.py
+python storage_sim.py
