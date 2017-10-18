@@ -197,6 +197,14 @@ def process_memory(memory, current_job, jobs_processed, avg_turnaround, visual_m
     return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_turnaround, jobs_processed
 
 
+# Main function
+#
+# Jacob Schlecht
+# CS4323
+# Simulation Project, Phase 1 : Curses Addon
+# 23/10/2017
+# stdscr - The screen passed in by Curses
+# fit_type - The requested memory management style, 0-2
 def main(stdscr, fit_type):
     # Curses initialization
     curses.noecho()
