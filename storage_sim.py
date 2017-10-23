@@ -235,17 +235,17 @@ def main(fit_type):
                 avg_occupied_size = 0.0
                 if num_of_occupied > 0:
                     avg_occupied_size = float(total_occupied_size) / num_of_occupied
-                print 'Ocupied Blocks: ' + str(num_of_occupied) + ' Average Size: ' + '%.4f' % avg_occupied_size + ''
+                print 'VTU-' + str(cycle) + ' Ocupied Blocks: ' + str(num_of_occupied) + ' Average Size: ' + '%.4f' % (avg_occupied_size*10) + 'K'
             if cycle%300 == 0:
                 avg_hole_size = 0.0
                 if num_of_holes > 0:
                     avg_hole_size = float(total_holes_size) / num_of_holes
-                print 'Free Blocks: ' + str(num_of_holes) + ' Average Size: ' + '%.4f' % avg_hole_size + ''
+                print 'VTU-' + str(cycle) + ' Free Blocks: ' + str(num_of_holes) + ' Average Size: ' + '%.4f' % (avg_hole_size*10) + 'K'
             if cycle%500 == 0:
                 external_fragmentation = total_holes_size * 10
-                print str(external_fragmentation) + 'K Byte Fragmentation'
+                print 'VTU-' + str(cycle) + ' ' + str(external_fragmentation) + 'K Byte Fragmentation'
             if cycle%1000 == 0:
-                print 'Reject Jobs at ' + str(cycle) + ': ' + str(rejected_jobs)
+                print 'VTU-' + str(cycle) + ' Reject Jobs at ' + str(cycle) + ': ' + str(rejected_jobs)
                 rejected_jobs = 0
 
     print 'Average Turnaround: ' + '%.4f' % avg_time_figures[0]
