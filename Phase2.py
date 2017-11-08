@@ -29,25 +29,8 @@ def create_job(jobs, last_job_time, cur_job_id):
 # memory        - The state of the memory
 # jobs          - Jobs queue
 # fit_type      - Number to represent the fit type
-# Returns:
-#   rejected_jobs
 def manage_jobs(memory, jobs, fit_type):
-    rejected_jobs = 0
     if len(jobs) > 0:
-        # Finding Biggest Block
-        biggest_block = [0, 0, 0, 0]
-        for x in range(len(memory)):
-            cur_cell = memory[x]
-            if not cur_cell[0] == 0:
-                if cur_cell[3] > biggest_block[3]:
-                    biggest_block = cur_cell
-        # Reject Oversized Jobs
-        next_job = jobs[0]
-        while next_job[3] > biggest_block[3] and not len(jobs) <= 0:
-            rejected_jobs = rejected_jobs + 1
-            jobs.popleft()
-            if len(jobs) > 0:
-                next_job = jobs[0]
         if len(jobs) > 0:
             if fit_type == 0:
                 first_fit(memory, jobs)
@@ -55,7 +38,6 @@ def manage_jobs(memory, jobs, fit_type):
                 best_fit(memory, jobs)
             elif fit_type == 2:
                 worst_fit(memory, jobs)
-    return rejected_jobs
 
 
 # Put job in next available fit
@@ -212,7 +194,7 @@ def process_memory(memory, current_job, jobs_processed, avg_time_figures):
 #
 # Jacob Schlecht
 # CS4323
-# Simulation Project, Phase 1
+# Simulation Project, Phase 2
 # 23/10/2017
 # fit_type - The requested memory management style, 0-2
 def main(fit_type):
@@ -231,7 +213,6 @@ def main(fit_type):
     # Statistics Variables
     # Time tuple, [avg turnaround, avg wait time, avg process time]
     avg_time_figures = [0.0, 0.0, 0.0]
-    rejected_jobs = 0
 
     for x in range(174):
         memory.append([0, 0, 0, 0])
@@ -244,7 +225,7 @@ def main(fit_type):
         last_job_time, cur_job_id = create_job(jobs, last_job_time, cur_job_id)
 
         # Job Managment
-        rejected_jobs = rejected_jobs + manage_jobs(memory, jobs, fit_type)
+        manage_jobs(memory, jobs, fit_type)
 
         # Keep track of longest waiting process and process current process
         current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed = \
@@ -265,9 +246,6 @@ def main(fit_type):
             if cycle%500 == 0:
                 external_fragmentation = total_holes_size * 10
                 print 'VTU-' + str(cycle) + ' ' + str(external_fragmentation) + 'K Byte Fragmentation'
-            if cycle%1000 == 0:
-                print 'VTU-' + str(cycle) + ' Reject Jobs at ' + str(cycle) + ': ' + str(rejected_jobs)
-                rejected_jobs = 0
 
     print 'Average Turnaround: ' + '%.4f' % avg_time_figures[0]
     print 'Average Wait Time: ' + '%.4f' % avg_time_figures[1]
