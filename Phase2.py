@@ -29,97 +29,123 @@ def create_job(jobs, last_job_time, cur_job_id):
 # memory        - The state of the memory
 # jobs          - Jobs queue
 # fit_type      - Number to represent the fit type
-def manage_jobs(memory, jobs, fit_type):
+# ready_queue   - The queue of jobs ready to be worked on
+def manage_jobs(memory, jobs, fit_type, ready_queue):
     if len(jobs) > 0:
-        if len(jobs) > 0:
-            if fit_type == 0:
-                first_fit(memory, jobs)
-            elif fit_type == 1:
-                best_fit(memory, jobs)
-            elif fit_type == 2:
-                worst_fit(memory, jobs)
+        new_job_id = False
+        if fit_type == 0:
+            new_job_id = first_fit(memory, jobs)
+        elif fit_type == 1:
+            new_job_id = best_fit(memory, jobs)
+        elif fit_type == 2:
+            new_job_id = worst_fit(memory, jobs)
+
+        if new_job_id:
+            ready_queue.append([new_job_id, 0])
 
 
 # Put job in next available fit
 # memory - The state of the memory
 # jobs - Jobs queue
+# Returns:
+#   new job ID or False
 def first_fit(memory, jobs):
-    next_job = jobs[0]
-    for x in range(len(memory)):
-        cur_cell = memory[x]
-        if cur_cell[0] == -1:
-            if cur_cell[3] == next_job[3]:
-                memory[x] = jobs.popleft()
-                return
-            elif cur_cell[3] > next_job[3]:
-                memory[x + next_job[3]][0] = -1
-                memory[x + next_job[3]][3] = cur_cell[3] - next_job[3]
-                memory[x] = jobs.popleft()
-                return
+    for y in range (len(jobs)):
+        next_job = jobs[y]
+        new_job_id = next_job[0]
+        for x in range(len(memory)):
+            cur_cell = memory[x]
+            if cur_cell[0] == -1:
+                if cur_cell[3] == next_job[3]:
+                    jobs.remove(next_job)
+                    memory[x] = next_job
+                    return new_job_id
+                elif cur_cell[3] > next_job[3]:
+                    memory[x + next_job[3]][0] = -1
+                    memory[x + next_job[3]][3] = cur_cell[3] - next_job[3]
+                    jobs.remove(next_job)
+                    memory[x] = next_job
+                    return new_job_id
+
+    return False
 
 
 # Put job in best available fit
 # memory - The state of the memory
 # jobs - Jobs queue
+# Returns:
+#   new job ID or False
 def best_fit(memory, jobs):
-    next_job = jobs[0]
-    least_cell = -1
-    least_cell_values = []
-    for x in range(len(memory)):
-        cur_cell = memory[x]
-        if cur_cell[0] == -1:
-            if cur_cell[3] == next_job[3]:
-                memory[x] = jobs.popleft()
-                return
-            elif cur_cell[3] > next_job[3] and (least_cell == -1 or cur_cell[3] < least_cell_values[3]):
-                least_cell = x
-                least_cell_values = cur_cell
-    if not least_cell == -1:
-        memory[least_cell + next_job[3]][0] = -1
-        memory[least_cell + next_job[3]][3] = least_cell_values[3] - next_job[3]
-        memory[least_cell] = jobs.popleft()
-        return
+    for y in range(len(jobs)):
+        next_job = jobs[y]
+        new_job_id = next_job[0]
+        least_cell = -1
+        least_cell_values = []
+        for x in range(len(memory)):
+            cur_cell = memory[x]
+            if cur_cell[0] == -1:
+                if cur_cell[3] == next_job[3]:
+                    jobs.remove(next_job)
+                    memory[x] = next_job
+                    return new_job_id
+                elif cur_cell[3] > next_job[3] and (least_cell == -1 or cur_cell[3] < least_cell_values[3]):
+                    least_cell = x
+                    least_cell_values = cur_cell
+        if not least_cell == -1:
+            memory[least_cell + next_job[3]][0] = -1
+            memory[least_cell + next_job[3]][3] = least_cell_values[3] - next_job[3]
+            jobs.remove(next_job)
+            memory[least_cell] = next_job
+            return new_job_id
+
+    return False
 
 
 # Put job in worst available fit
 # memory - The state of the memory
 # jobs - Jobs queue
+# Returns:
+#   new job ID or False
 def worst_fit(memory, jobs):
-    next_job = jobs[0]
-    biggest_cell = -1
-    biggest_cell_values = []
-    for x in range(len(memory)):
-        cur_cell = memory[x]
-        if cur_cell[0] == -1:
-            if cur_cell[3] >= next_job[3] and (biggest_cell == -1 or cur_cell[3] > biggest_cell_values[3]):
-                biggest_cell = x
-                biggest_cell_values = cur_cell
-    if not biggest_cell == -1:
-        if biggest_cell_values[3] == next_job[3]:
-            memory[biggest_cell] = jobs.popleft()
-            return
-        else:
-            memory[biggest_cell + next_job[3]][0] = -1
-            memory[biggest_cell + next_job[3]][3] = biggest_cell_values[3] - next_job[3]
-            memory[biggest_cell] = jobs.popleft()
-            return
+    for y in range(len(jobs)):
+        next_job = jobs[0]
+        new_job_id = next_job[0]
+        biggest_cell = -1
+        biggest_cell_values = []
+        for x in range(len(memory)):
+            cur_cell = memory[x]
+            if cur_cell[0] == -1:
+                if cur_cell[3] >= next_job[3] and (biggest_cell == -1 or cur_cell[3] > biggest_cell_values[3]):
+                    biggest_cell = x
+                    biggest_cell_values = cur_cell
+        if not biggest_cell == -1:
+            if biggest_cell_values[3] == next_job[3]:
+                jobs.remove(next_job)
+                memory[biggest_cell] = next_job
+                return new_job_id
+            else:
+                memory[biggest_cell + next_job[3]][0] = -1
+                memory[biggest_cell + next_job[3]][3] = biggest_cell_values[3] - next_job[3]
+                jobs.remove(next_job)
+                memory[biggest_cell] = next_job
+                return new_job_id
+
+    return False
 
 
 # Process the process and clear memory of finished processes
 # memory - The state of the memory
-# current_job - The ID of the job we are processing currently
+# ready_queue - The queue of jobs ready to be worked on
 # jobs_processed - The count of jobs processed
 # avg_time_figures - The table for average timers
 # Returns:
-#   current_job
 #   num_of_occupied (Statistics)
 #   num_of_holes (Statistics)
 #   total_occupied_size (Statistics)
 #   total_holes_size (Statistics)
 #   avg_time_figures (Statistics)
 #   jobs_processed (Statistics)
-def process_memory(memory, current_job, jobs_processed, avg_time_figures):
-    lowest_time = [5000, -1, 0]
+def process_memory(memory, ready_queue, jobs_processed, avg_time_figures):
 
     num_of_occupied = 0
     num_of_holes = 0
@@ -135,26 +161,35 @@ def process_memory(memory, current_job, jobs_processed, avg_time_figures):
             num_of_occupied = num_of_occupied + 1
             total_occupied_size = total_occupied_size + cur_cell[3]
 
-            if cur_cell[0] == current_job:
+            if cur_cell[0] == ready_queue[0][0]:
                 if cur_cell[2] < 1:
                     # If we are in the polling period, begin taking processing statistics
                     if cycle > 1000:
                         jobs_processed = jobs_processed + 1
                         avg_time_figures[0] = avg_time_figures[0] + (((cycle - cur_cell[1]) - avg_time_figures[0]) / jobs_processed)
                     cur_cell = [-1, 0, 0, cur_cell[3]]
+
+                    # Coelescence
                     if x + cur_cell[3] < 175 and memory[x + cur_cell[3]][0] == -1:
-                        memory[x + cur_cell[3]] = [0, 0, 0, 0]
+                        old_cell_size = cur_cell[3]
                         cur_cell[3] = cur_cell[3] + memory[x + cur_cell[3]][3]
+                        memory[x + old_cell_size] = [0, 0, 0, 0]
                     if size_of_last_hole_if_free > 0:
                         memory[x - size_of_last_hole_if_free][3] = size_of_last_hole_if_free + cur_cell[3]
                         cur_cell = [0, 0, 0, 0]
+
+                    # Remove job from ready_queue
+                    ready_queue.popleft()
                 else:
-                    lowest_time = [cur_cell[1], cur_cell[0], cur_cell[2]]
-                cur_cell[2] = cur_cell[2] - 1
+                    cur_cell[2] = cur_cell[2] - 1
+
+                    # Rotate the ready_queue, Round Robin style
+                    ready_queue[0][1] = ready_queue[0][1] + 1
+                    if ready_queue[0][1] >= 5:
+                        ready_queue[0][1] = 0
+                        ready_queue.append(ready_queue.popleft())
+
                 memory[x] = cur_cell
-            else:
-                if cur_cell[1] < lowest_time[0]:
-                    lowest_time = [cur_cell[1], cur_cell[0], cur_cell[2]]
 
             # Jump forward to the next cell
             x = x + cur_cell[3]
@@ -174,20 +209,7 @@ def process_memory(memory, current_job, jobs_processed, avg_time_figures):
             # This hole is free, so save its size for coelescence
             size_of_last_hole_if_free = cur_cell[3]
 
-    # If the lowest time'd job is new, do statistics on it.
-    if not lowest_time[1] == current_job:
-        current_job = lowest_time[1]
-        if cycle > 1000 and not lowest_time[1] == -1:
-            if avg_time_figures[1] == 0.0:
-                avg_time_figures[1] = lowest_time[0]
-            else:
-                avg_time_figures[1] = avg_time_figures[1] + (((cycle - lowest_time[0]) - avg_time_figures[1]) / (jobs_processed + 1))
-            if avg_time_figures[2] == 0.0:
-                avg_time_figures[2] = lowest_time[2]
-            else:
-                avg_time_figures[2] = avg_time_figures[2] + ((lowest_time[2] - avg_time_figures[2]) / (jobs_processed + 1))
-
-    return current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed
+    return num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed
 
 
 # Main function
@@ -202,11 +224,11 @@ def main(fit_type):
     # Operating System Variables
     memory = []
     memory.append([-1, 0, 0, 175])
-    jobs = deque([])
+    jobs = []
+    ready_queue = deque([])
     global cycle
     cycle = 1
     last_job_time = 0
-    current_job = 1
     cur_job_id = 1
     jobs_processed = 0
 
@@ -222,14 +244,16 @@ def main(fit_type):
         cycle = cycle + 1
 
         # Job Creation
-        last_job_time, cur_job_id = create_job(jobs, last_job_time, cur_job_id)
+        if len(jobs) < 100:
+            last_job_time, cur_job_id = create_job(jobs, last_job_time, cur_job_id)
 
         # Job Managment
-        manage_jobs(memory, jobs, fit_type)
+        manage_jobs(memory, jobs, fit_type, ready_queue)
 
         # Keep track of longest waiting process and process current process
-        current_job, num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed = \
-            process_memory(memory, current_job, jobs_processed, avg_time_figures)
+        num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed = \
+            process_memory(memory, ready_queue, jobs_processed, avg_time_figures)
+
 
         # Statistic Printing
         if cycle > 1000:
