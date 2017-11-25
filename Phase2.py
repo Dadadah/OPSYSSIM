@@ -9,7 +9,7 @@ from collections import deque
 # CS4323
 # Simulation Project, Phase 2
 # 23/10/2017
-# fit_type - The requested memory management style, 0-2
+# fit_type - The requested memory management style, 0-8
 def main(fit_type):
 
     # Operating System Variables
@@ -34,6 +34,14 @@ def main(fit_type):
     # Clock Cycle Simulation
     while cycle < 5000:
         cycle = cycle + 1
+
+        # Conditional Compaction
+        if fit_type/3 == 1:
+            if cycle%250 == 0:
+                compaction()
+        elif fit_type/3 == 2:
+            if cycle%360 == 0:
+                compaction()
 
         # Job Creation
         if len(jobs) < 100:
@@ -301,10 +309,20 @@ def process_memory(ready_queue, jobs_processed, avg_time_figures):
     return num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed
 
 
-print '---------------------FIRST FIT------------------------'
-main(0)
-print '----------------------BEST FIT------------------------'
-main(1)
-print '---------------------WORST FIT------------------------'
-main(2)
-print '------------------------DONE--------------------------'
+for x in range(9):
+    compscheme = ''
+    if x/3 == 0:
+        compscheme = 'Imediate'
+    elif x/3 == 1:
+        compscheme = '250 VTU'
+    elif x/3 == 2:
+        compscheme = '360 VTU'
+    fit = ''
+    if x%3 == 0:
+        fit = 'First'
+    if x%3 == 1:
+        fit = 'Best'
+    if x%3 == 2:
+        fit = 'Worst'
+    print '---------- ' + compscheme + ' --- ' + fit + ' ----------'
+    main(x)
