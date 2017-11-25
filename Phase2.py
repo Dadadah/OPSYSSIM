@@ -3,7 +3,73 @@ import time as time
 from collections import deque
 
 
+# Main function
+#
+# Jacob Schlecht
+# CS4323
+# Simulation Project, Phase 2
+# 23/10/2017
+# fit_type - The requested memory management style, 0-2
+def main(fit_type):
+
+    # Operating System Variables
+    global memory
+    memory = []
+    memory.append([-1, 0, 0, 175])
+    jobs = []
+    ready_queue = deque([])
+    global cycle
+    cycle = 1
+    last_job_time = 0
+    cur_job_id = 1
+    jobs_processed = 0
+
+    # Statistics Variables
+    # Time tuple, [avg turnaround, avg wait time, avg process time]
+    avg_time_figures = [0.0, 0.0, 0.0]
+
+    for x in range(174):
+        memory.append([0, 0, 0, 0])
+
+    # Clock Cycle Simulation
+    while cycle < 5000:
+        cycle = cycle + 1
+
+        # Job Creation
+        if len(jobs) < 100:
+            last_job_time, cur_job_id = create_job(jobs, last_job_time, cur_job_id)
+
+        # Job Managment
+        manage_jobs(jobs, fit_type, ready_queue)
+
+        # Keep track of longest waiting process and process current process
+        num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed = \
+            process_memory(ready_queue, jobs_processed, avg_time_figures)
+
+
+        # Statistic Printing
+        if cycle > 1000:
+            if cycle%200 == 0:
+                avg_occupied_size = 0.0
+                if num_of_occupied > 0:
+                    avg_occupied_size = float(total_occupied_size) / num_of_occupied
+                print 'VTU-' + str(cycle) + ' Ocupied Blocks: ' + str(num_of_occupied) + ' Average Size: ' + '%.4f' % (avg_occupied_size*10) + 'K'
+            if cycle%300 == 0:
+                avg_hole_size = 0.0
+                if num_of_holes > 0:
+                    avg_hole_size = float(total_holes_size) / num_of_holes
+                print 'VTU-' + str(cycle) + ' Free Blocks: ' + str(num_of_holes) + ' Average Size: ' + '%.4f' % (avg_hole_size*10) + 'K'
+            if cycle%500 == 0:
+                external_fragmentation = total_holes_size * 10
+                print 'VTU-' + str(cycle) + ' ' + str(external_fragmentation) + 'K Byte Fragmentation'
+
+    print 'Average Turnaround: ' + '%.4f' % avg_time_figures[0]
+    print 'Average Wait Time: ' + '%.4f' % avg_time_figures[1]
+    print 'Average Processing Time: ' + '%.4f' % avg_time_figures[2]
+
+
 cycle = 1
+memory = []
 
 
 # Create a job
@@ -26,30 +92,51 @@ def create_job(jobs, last_job_time, cur_job_id):
 
 
 # Manage jobs, delete jobs, ready jobs
-# memory        - The state of the memory
 # jobs          - Jobs queue
 # fit_type      - Number to represent the fit type
 # ready_queue   - The queue of jobs ready to be worked on
-def manage_jobs(memory, jobs, fit_type, ready_queue):
+def manage_jobs(jobs, fit_type, ready_queue):
+    global memory
     if len(jobs) > 0:
         new_job_id = False
-        if fit_type == 0:
-            new_job_id = first_fit(memory, jobs)
-        elif fit_type == 1:
-            new_job_id = best_fit(memory, jobs)
-        elif fit_type == 2:
-            new_job_id = worst_fit(memory, jobs)
+        if fit_type%3 == 0:
+            new_job_id = first_fit(jobs)
+        elif fit_type%3 == 1:
+            new_job_id = best_fit(jobs)
+        elif fit_type%3 == 2:
+            new_job_id = worst_fit(jobs)
 
         if new_job_id:
             ready_queue.append([new_job_id, 0])
+        elif fit_type/3 == 0:
+            compaction()
 
+
+# Compact the memory
+def compaction():
+    global memory
+    new_memory = []
+
+    for x in range(175):
+        new_memory.append([0, 0, 0, 0])
+
+    y = 0
+    for x in range(len(memory)):
+        if memory[x][0] > 0:
+            new_memory[y] = memory[x][:]
+            y = y + memory[x][3]
+            x = x + memory[x][3]
+    if y < 175:
+        new_memory[y] = [-1, 0, 0, 175-y]
+    memory = new_memory[:]
 
 # Put job in next available fit
 # memory - The state of the memory
 # jobs - Jobs queue
 # Returns:
 #   new job ID or False
-def first_fit(memory, jobs):
+def first_fit(jobs):
+    global memory
     for y in range (len(jobs)):
         next_job = jobs[y]
         new_job_id = next_job[0]
@@ -75,7 +162,8 @@ def first_fit(memory, jobs):
 # jobs - Jobs queue
 # Returns:
 #   new job ID or False
-def best_fit(memory, jobs):
+def best_fit(jobs):
+    global memory
     for y in range(len(jobs)):
         next_job = jobs[y]
         new_job_id = next_job[0]
@@ -106,7 +194,8 @@ def best_fit(memory, jobs):
 # jobs - Jobs queue
 # Returns:
 #   new job ID or False
-def worst_fit(memory, jobs):
+def worst_fit(jobs):
+    global memory
     for y in range(len(jobs)):
         next_job = jobs[0]
         new_job_id = next_job[0]
@@ -134,7 +223,6 @@ def worst_fit(memory, jobs):
 
 
 # Process the process and clear memory of finished processes
-# memory - The state of the memory
 # ready_queue - The queue of jobs ready to be worked on
 # jobs_processed - The count of jobs processed
 # avg_time_figures - The table for average timers
@@ -145,8 +233,9 @@ def worst_fit(memory, jobs):
 #   total_holes_size (Statistics)
 #   avg_time_figures (Statistics)
 #   jobs_processed (Statistics)
-def process_memory(memory, ready_queue, jobs_processed, avg_time_figures):
+def process_memory(ready_queue, jobs_processed, avg_time_figures):
 
+    global memory
     num_of_occupied = 0
     num_of_holes = 0
     total_occupied_size = 0
@@ -161,7 +250,7 @@ def process_memory(memory, ready_queue, jobs_processed, avg_time_figures):
             num_of_occupied = num_of_occupied + 1
             total_occupied_size = total_occupied_size + cur_cell[3]
 
-            if cur_cell[0] == ready_queue[0][0]:
+            if len(ready_queue) > 0 and cur_cell[0] == ready_queue[0][0]:
                 if cur_cell[2] < 1:
                     # If we are in the polling period, begin taking processing statistics
                     if cycle > 1000:
@@ -210,70 +299,6 @@ def process_memory(memory, ready_queue, jobs_processed, avg_time_figures):
             size_of_last_hole_if_free = cur_cell[3]
 
     return num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed
-
-
-# Main function
-#
-# Jacob Schlecht
-# CS4323
-# Simulation Project, Phase 2
-# 23/10/2017
-# fit_type - The requested memory management style, 0-2
-def main(fit_type):
-
-    # Operating System Variables
-    memory = []
-    memory.append([-1, 0, 0, 175])
-    jobs = []
-    ready_queue = deque([])
-    global cycle
-    cycle = 1
-    last_job_time = 0
-    cur_job_id = 1
-    jobs_processed = 0
-
-    # Statistics Variables
-    # Time tuple, [avg turnaround, avg wait time, avg process time]
-    avg_time_figures = [0.0, 0.0, 0.0]
-
-    for x in range(174):
-        memory.append([0, 0, 0, 0])
-
-    # Clock Cycle Simulation
-    while cycle < 5000:
-        cycle = cycle + 1
-
-        # Job Creation
-        if len(jobs) < 100:
-            last_job_time, cur_job_id = create_job(jobs, last_job_time, cur_job_id)
-
-        # Job Managment
-        manage_jobs(memory, jobs, fit_type, ready_queue)
-
-        # Keep track of longest waiting process and process current process
-        num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed = \
-            process_memory(memory, ready_queue, jobs_processed, avg_time_figures)
-
-
-        # Statistic Printing
-        if cycle > 1000:
-            if cycle%200 == 0:
-                avg_occupied_size = 0.0
-                if num_of_occupied > 0:
-                    avg_occupied_size = float(total_occupied_size) / num_of_occupied
-                print 'VTU-' + str(cycle) + ' Ocupied Blocks: ' + str(num_of_occupied) + ' Average Size: ' + '%.4f' % (avg_occupied_size*10) + 'K'
-            if cycle%300 == 0:
-                avg_hole_size = 0.0
-                if num_of_holes > 0:
-                    avg_hole_size = float(total_holes_size) / num_of_holes
-                print 'VTU-' + str(cycle) + ' Free Blocks: ' + str(num_of_holes) + ' Average Size: ' + '%.4f' % (avg_hole_size*10) + 'K'
-            if cycle%500 == 0:
-                external_fragmentation = total_holes_size * 10
-                print 'VTU-' + str(cycle) + ' ' + str(external_fragmentation) + 'K Byte Fragmentation'
-
-    print 'Average Turnaround: ' + '%.4f' % avg_time_figures[0]
-    print 'Average Wait Time: ' + '%.4f' % avg_time_figures[1]
-    print 'Average Processing Time: ' + '%.4f' % avg_time_figures[2]
 
 
 print '---------------------FIRST FIT------------------------'
