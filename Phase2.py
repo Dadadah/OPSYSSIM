@@ -14,11 +14,11 @@ def main(fit_type):
 
     # Operating System Variables
     global memory
+    global cycle
     memory = []
-    memory.append([-1, 0, 0, 175])
+    memory.append([-1, 0, 0, 175, 0])
     jobs = []
     ready_queue = deque([])
-    global cycle
     cycle = 1
     last_job_time = 0
     cur_job_id = 1
@@ -29,7 +29,7 @@ def main(fit_type):
     avg_time_figures = [0.0, 0.0, 0.0]
 
     for x in range(174):
-        memory.append([0, 0, 0, 0])
+        memory.append([0, 0, 0, 0, 0])
 
     # Clock Cycle Simulation
     while cycle < 5000:
@@ -71,9 +71,9 @@ def main(fit_type):
                 external_fragmentation = total_holes_size * 10
                 print 'VTU-' + str(cycle) + ' ' + str(external_fragmentation) + 'K Byte Fragmentation'
 
-    print 'Average Turnaround: ' + '%.4f' % avg_time_figures[0]
-    print 'Average Wait Time: ' + '%.4f' % avg_time_figures[1]
-    print 'Average Processing Time: ' + '%.4f' % avg_time_figures[2]
+    print 'Average Turnaround: ' + '%.4f' % (avg_time_figures[0]/jobs_processed)
+    print 'Average Wait Time: ' + '%.4f' % (avg_time_figures[1]/jobs_processed)
+    print 'Average Processing Time: ' + '%.4f' % (avg_time_figures[2]/jobs_processed)
 
 
 cycle = 1
@@ -94,6 +94,7 @@ def create_job(jobs, last_job_time, cur_job_id):
         new_job.append(cycle)
         new_job.append(rand.randint(1, 12) * 5)
         new_job.append(rand.randint(5, 30))
+        new_job.append(0)
         jobs.append(new_job)
         return cycle, cur_job_id + 1
     return last_job_time, cur_job_id
@@ -126,7 +127,7 @@ def compaction():
     new_memory = []
 
     for x in range(175):
-        new_memory.append([0, 0, 0, 0])
+        new_memory.append([0, 0, 0, 0, 0])
 
     y = 0
     for x in range(len(memory)):
@@ -135,7 +136,7 @@ def compaction():
             y = y + memory[x][3]
             x = x + memory[x][3]
     if y < 175:
-        new_memory[y] = [-1, 0, 0, 175-y]
+        new_memory[y] = [-1, 0, 0, 175-y, 0]
     memory = new_memory[:]
 
 # Put job in next available fit
@@ -263,22 +264,25 @@ def process_memory(ready_queue, jobs_processed, avg_time_figures):
                     # If we are in the polling period, begin taking processing statistics
                     if cycle > 1000:
                         jobs_processed = jobs_processed + 1
-                        avg_time_figures[0] = avg_time_figures[0] + (((cycle - cur_cell[1]) - avg_time_figures[0]) / jobs_processed)
-                    cur_cell = [-1, 0, 0, cur_cell[3]]
+                        avg_time_figures[0] = avg_time_figures[0] + (cycle - cur_cell[1])
+                        avg_time_figures[1] = avg_time_figures[1] + (cycle - cur_cell[1]) - cur_cell[4]
+                        avg_time_figures[2] = avg_time_figures[2] + cur_cell[4]
+                    cur_cell = [-1, 0, 0, cur_cell[3], 0]
 
                     # Coelescence
                     if x + cur_cell[3] < 175 and memory[x + cur_cell[3]][0] == -1:
                         old_cell_size = cur_cell[3]
                         cur_cell[3] = cur_cell[3] + memory[x + cur_cell[3]][3]
-                        memory[x + old_cell_size] = [0, 0, 0, 0]
+                        memory[x + old_cell_size] = [0, 0, 0, 0, 0]
                     if size_of_last_hole_if_free > 0:
                         memory[x - size_of_last_hole_if_free][3] = size_of_last_hole_if_free + cur_cell[3]
-                        cur_cell = [0, 0, 0, 0]
+                        cur_cell = [0, 0, 0, 0, 0]
 
                     # Remove job from ready_queue
                     ready_queue.popleft()
                 else:
                     cur_cell[2] = cur_cell[2] - 1
+                    cur_cell[4] = cur_cell[4] + 1
 
                     # Rotate the ready_queue, Round Robin style
                     ready_queue[0][1] = ready_queue[0][1] + 1
@@ -309,6 +313,7 @@ def process_memory(ready_queue, jobs_processed, avg_time_figures):
     return num_of_occupied, num_of_holes, total_occupied_size, total_holes_size, avg_time_figures, jobs_processed
 
 
+# Run through all 8 schemes, and generate a string to match the string.
 for x in range(9):
     compscheme = ''
     if x/3 == 0:
