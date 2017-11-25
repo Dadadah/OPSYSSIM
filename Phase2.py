@@ -27,6 +27,8 @@ def main(fit_type):
     # Statistics Variables
     # Time tuple, [avg turnaround, avg wait time, avg process time]
     avg_time_figures = [0.0, 0.0, 0.0]
+    storageutil = 0
+    avg_hole_size = 0.0
 
     for x in range(174):
         memory.append([0, 0, 0, 0, 0])
@@ -55,27 +57,26 @@ def main(fit_type):
             process_memory(ready_queue, jobs_processed, avg_time_figures)
 
 
-        # Statistic Printing
+        # Statistic calculations
         if cycle > 1000:
-            if cycle%200 == 0:
-                avg_occupied_size = 0.0
-                if num_of_occupied > 0:
-                    avg_occupied_size = float(total_occupied_size) / num_of_occupied
-                print 'VTU-' + str(cycle) + ' Ocupied Blocks: ' + str(num_of_occupied) + ' Average Size: ' + '%.4f' % (avg_occupied_size*10) + 'K'
-            if cycle%300 == 0:
-                avg_hole_size = 0.0
+            if cycle%100 == 0:
+                memory_util = (175 - total_holes_size) * 10
+                storageutil = storageutil + memory_util
                 if num_of_holes > 0:
-                    avg_hole_size = float(total_holes_size) / num_of_holes
-                print 'VTU-' + str(cycle) + ' Free Blocks: ' + str(num_of_holes) + ' Average Size: ' + '%.4f' % (avg_hole_size*10) + 'K'
-            if cycle%500 == 0:
-                external_fragmentation = total_holes_size * 10
-                print 'VTU-' + str(cycle) + ' ' + str(external_fragmentation) + 'K Byte Fragmentation'
+                    avg_hole_size = avg_hole_size + (float(total_holes_size) / num_of_holes)
+            if cycle%1000 == 0:
+                print jobs
 
+
+    print 'Average Storage Utilization: ' + '%.4f' % (storageutil/40)
+    print 'Average External Fragmentation: ' + '%.4f' % (1750 - (storageutil/40))
+    print 'Average Hole Size: ' + '%.4f' % (avg_hole_size/40)
     print 'Average Turnaround: ' + '%.4f' % (avg_time_figures[0]/jobs_processed)
     print 'Average Wait Time: ' + '%.4f' % (avg_time_figures[1]/jobs_processed)
     print 'Average Processing Time: ' + '%.4f' % (avg_time_figures[2]/jobs_processed)
 
 
+# Global variables to make parameter passing a little less messy.
 cycle = 1
 memory = []
 
