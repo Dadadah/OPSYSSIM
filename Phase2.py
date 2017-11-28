@@ -289,7 +289,7 @@ def process_memory(ready_queue, jobs_processed, avg_time_figures):
                     ready_queue.popleft()
                 else:
                     cur_cell[2] = cur_cell[2] - 1
-                    cur_cell[4] = cur_cell[4] + 1sftp
+                    cur_cell[4] = cur_cell[4] + 1
 
                     # Rotate the ready_queue, Round Robin style
                     ready_queue[0][1] = ready_queue[0][1] + 1
