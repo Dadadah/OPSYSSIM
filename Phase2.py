@@ -34,7 +34,7 @@ def main(fit_type):
         memory.append([0, 0, 0, 0, 0])
 
     # Clock Cycle Simulation
-    while cycle < 5000:
+    while cycle <= 5000:
         cycle = cycle + 1
 
         # Conditional Compaction
@@ -64,16 +64,22 @@ def main(fit_type):
                 storageutil = storageutil + memory_util
                 if num_of_holes > 0:
                     avg_hole_size = avg_hole_size + (float(total_holes_size) / num_of_holes)
-            if cycle%1000 == 0:
-                print jobs
+
+        # Job printing
+        if cycle%1000 == 0 and fit_type%3 == 0 and cycle != 0:
+            count = 1
+            print '----- Jobs at cycle ' + str(cycle) + ' -----'
+            for x in jobs:
+                print str(count) + '. ' + str(x)
+                count = count + 1
 
 
-    print 'Average Storage Utilization: ' + '%.4f' % (storageutil/40)
-    print 'Average External Fragmentation: ' + '%.4f' % (1750 - (storageutil/40))
-    print 'Average Hole Size: ' + '%.4f' % (avg_hole_size/40)
-    print 'Average Turnaround: ' + '%.4f' % (avg_time_figures[0]/jobs_processed)
-    print 'Average Wait Time: ' + '%.4f' % (avg_time_figures[1]/jobs_processed)
-    print 'Average Processing Time: ' + '%.4f' % (avg_time_figures[2]/jobs_processed)
+    print 'Average Storage Utilization: ' + ('%.4f' % (storageutil/40)) + 'K'
+    print 'Average External Fragmentation: ' + ('%.4f' % (1750 - (storageutil/40))) + 'K'
+    print 'Average Hole Size: ' + ('%.4f' % (avg_hole_size/40)) + 'K'
+    print 'Average Turnaround: ' + ('%.4f' % (avg_time_figures[0]/jobs_processed)) + ' seconds'
+    print 'Average Wait Time: ' + ('%.4f' % (avg_time_figures[1]/jobs_processed)) + ' seconds'
+    print 'Average Processing Time: ' + ('%.4f' % (avg_time_figures[2]/jobs_processed)) + ' seconds'
 
 
 # Global variables to make parameter passing a little less messy.
