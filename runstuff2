@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Script to run commands for program 2
+
+mkdir Program2
+cd Program2
+mv ../Phase2.py .
+
+echo "whoami | name -w"
+whoami | name -w
+
+echo ls -ltr
+ls -ltr
+
+echo pr -n Phase2.py
+pr -n Phase2.py
+
+echo python Phase2.py
+python Phase2.py

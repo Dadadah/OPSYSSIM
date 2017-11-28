@@ -212,18 +212,18 @@ def best_fit(jobs):
 #   new job ID or False
 def worst_fit(jobs):
     global memory
+    biggest_cell = -1
+    biggest_cell_values = []
+    for x in range(len(memory)):
+        cur_cell = memory[x]
+        if cur_cell[0] == -1:
+            if biggest_cell == -1 or cur_cell[3] > biggest_cell_values[3]:
+                biggest_cell = x
+                biggest_cell_values = cur_cell
     for y in range(len(jobs)):
         next_job = jobs[0]
         new_job_id = next_job[0]
-        biggest_cell = -1
-        biggest_cell_values = []
-        for x in range(len(memory)):
-            cur_cell = memory[x]
-            if cur_cell[0] == -1:
-                if cur_cell[3] >= next_job[3] and (biggest_cell == -1 or cur_cell[3] > biggest_cell_values[3]):
-                    biggest_cell = x
-                    biggest_cell_values = cur_cell
-        if not biggest_cell == -1:
+        if not biggest_cell == -1 and biggest_cell_values[3] >= next_job[3]:
             if biggest_cell_values[3] == next_job[3]:
                 jobs.remove(next_job)
                 memory[biggest_cell] = next_job
@@ -289,7 +289,7 @@ def process_memory(ready_queue, jobs_processed, avg_time_figures):
                     ready_queue.popleft()
                 else:
                     cur_cell[2] = cur_cell[2] - 1
-                    cur_cell[4] = cur_cell[4] + 1
+                    cur_cell[4] = cur_cell[4] + 1sftp
 
                     # Rotate the ready_queue, Round Robin style
                     ready_queue[0][1] = ready_queue[0][1] + 1
