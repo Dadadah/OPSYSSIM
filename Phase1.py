@@ -220,7 +220,8 @@ def main(fit_type):
         cycle = cycle + 1
 
         # Job Creation
-        last_job_time, cur_job_id = create_job(jobs, last_job_time, cur_job_id)
+        if len(jobs) < 1:
+            last_job_time, cur_job_id = create_job(jobs, last_job_time, cur_job_id)
 
         # Job Managment
         rejected_jobs = rejected_jobs + manage_jobs(memory, jobs, fit_type)
