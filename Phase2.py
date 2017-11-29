@@ -8,7 +8,7 @@ from collections import deque
 # Jacob Schlecht
 # CS4323
 # Simulation Project, Phase 2
-# 23/10/2017
+# 30/11/2017
 # fit_type - The requested memory management style, 0-8
 def main(fit_type):
 
