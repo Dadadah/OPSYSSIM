@@ -77,9 +77,9 @@ def main(fit_type):
     print 'Average Storage Utilization: ' + ('%.4f' % (storageutil/40)) + 'K'
     print 'Average External Fragmentation: ' + ('%.4f' % (1750 - (storageutil/40))) + 'K'
     print 'Average Hole Size: ' + ('%.4f' % (avg_hole_size/40)) + 'K'
-    print 'Average Turnaround: ' + ('%.4f' % (avg_time_figures[0]/jobs_processed)) + ' seconds'
-    print 'Average Wait Time: ' + ('%.4f' % (avg_time_figures[1]/jobs_processed)) + ' seconds'
-    print 'Average Processing Time: ' + ('%.4f' % (avg_time_figures[2]/jobs_processed)) + ' seconds'
+    print 'Average Turnaround: ' + ('%.4f' % (avg_time_figures[0]/jobs_processed)) + ' VTU'
+    print 'Average Wait Time: ' + ('%.4f' % (avg_time_figures[1]/jobs_processed)) + ' VTU'
+    print 'Average Processing Time: ' + ('%.4f' % (avg_time_figures[2]/jobs_processed)) + ' VTU'
 
 
 # Global variables to make parameter passing a little less messy.
